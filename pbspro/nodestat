@@ -1,0 +1,58 @@
+#!/bin/sh
+PBSNODE=/opt/pbs/bin/pbsnodes
+
+case $1 in
+   -h|--help)
+      echo "Usage: $0"
+     ;;
+   *)
+    $PBSNODE -a|awk 'BEGIN {
+       FS = "\n"
+       RS = ""
+       print  "-------------------------------------------------------------------------"
+       printf "Node\t%7s %7s %7s %7s %7s %7s %s\n", "#CPUs", "CPUrun", "CPUavl", "#GPUs", "GPUrun", "GPUavl", "Queue list"
+       print  "------\t-------\t-------\t-------\t-------\t-------\t-------\t-----------------"
+    }
+
+    {
+       Nent[$1] = $1
+       for (i = 2; i <= NF; i++) {
+          if ($i ~ /^[^=]*resources_available.ncpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             nCPU[$1] = $i
+          }
+          if ($i ~ /^[^=]*resources_assigned.ncpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             rCPU[$1] = $i
+          }
+          if ($i ~ /^[^=]*resources_available.ngpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             nGPU[$1] = $i
+          }
+          if ($i ~ /^[^=]*resources_assigned.ngpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             rGPU[$1] = $i
+          }
+          if ($i ~ /^[^=]*resources_available.Qlist[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             Qlst[$1] = $i
+          }
+       }
+    }
+
+    END {
+       for (i = 1; i <= asorti(Nent, Nind); i++ ) {
+          printf "%s\t%7d %7d %7d %7d %7d %7d %s\n",
+             Nind[i],
+             nCPU[Nind[i]],
+             rCPU[Nind[i]],
+             nCPU[Nind[i]]-rCPU[Nind[i]],
+             nGPU[Nind[i]],
+             rGPU[Nind[i]],
+             nGPU[Nind[i]]-rGPU[Nind[i]],
+             Qlst[Nind[i]]
+       }
+       print  "------------------------------------------------------------------------"
+    }'
+   ;;
+esac
