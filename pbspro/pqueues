@@ -1,0 +1,87 @@
+#!/bin/sh
+QSTAT=/opt/pbs/bin/qstat
+
+case $1 in
+   -h|--help)
+      echo "Usage: $0"
+   ;;
+   *)
+    $QSTAT -f| awk 'BEGIN {
+       FS = "\n"
+       RS = ""
+    }
+
+    {
+       sub(/^[^:]*:[[:space:]]*/, "", $1)
+       jid[$1] = $1
+       for (i = 2; i <= NF; i++) {
+          if ($i ~ /^[^=]*Job_Owner[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             sub(/@[^@]*$/, "", $i)
+             user[$1] = $i
+          }
+          if ($i ~ /^[^=]*queue[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             queu[$1] = $i
+          }
+          if ($i ~ /^[^=]*job_state[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             stat[$1] = $i
+          }
+          if ($i ~ /^[^=]*Resource_List.ncpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             cpus[$1] = $i
+          }
+          if ($i ~ /^[^=]*Resource_List.ngpus[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             gpus[$1] = $i
+          }
+          if ($i ~ /^[^=]*Resource_List.nodect[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             node[$1] = $i
+          }
+          if ($i ~ /^[^=]*project[[:space:]]*=/) {
+             sub(/^[^=]*=[[:space:]]*/, "", $i)
+             proj[$1] = $i
+          }
+       }
+    }
+
+    END {
+       for (i = 1; i <= asorti(jid, idx); i++ ) {
+          printf "%-15s\t%-15s %-7s %7s %7d %7d %7d %s\n",
+             idx[i],
+             user[idx[i]],
+             queu[idx[i]],
+             stat[idx[i]],
+             cpus[idx[i]],
+             gpus[idx[i]],
+             node[idx[i]],
+             proj[idx[i]]
+       }
+    }' |awk 'BEGIN {
+               printf "\nQueue\t\t %7s %7s %7s %7s %7s\n", "Total", "Run", "Pend", "Hold", "Error"
+               print  "--------------------------------------------------------"
+            }
+
+                  { Anam[$3] += 1 }
+
+            $4 ~ /\<[RB]\>/ { RCsum[$3] += $5;RGsum += $6 }
+            $4 == "Q"   { QCsum[$3] += $5; QGsum += $6 }
+            $4 == "H"   { HCsum[$3] += $5; HGsum += $6 }
+            $4 == "E"   { ECsum[$3] += $5; EGsum += $6 }
+            END {
+               n = asorti(Anam, Asrt)
+               for ( i = 1; i <= n; i++ ) {
+                  printf "%-16s %7d %7d %7d %7d %7d\n", Asrt[i], RCsum[Asrt[i]]+QCsum[Asrt[i]], RCsum[Asrt[i]], QCsum[Asrt[i]], HCsum[Asrt[i]], ECsum[Asrt[i]]
+                  Rsub += RCsum[Asrt[i]]
+                  Qsub += QCsum[Asrt[i]]
+                  Hsub += HCsum[Asrt[i]]
+                  Esub += ECsum[Asrt[i]]
+               }
+               print  "--------------------------------------------------------"
+               printf "Sum\t\t %7d %7d %7d %7d %7d\n\n", Rsub+Qsub, Rsub, Qsub, Hsub, Esub
+            }'
+
+   ;;
+esac

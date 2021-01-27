@@ -1,0 +1,3 @@
+#!/bin/bash
+
+pbsnodes -a | grep "state =" | sort | uniq -c
