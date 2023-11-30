@@ -31,3 +31,5 @@ GCAL_URL_BASE="https://calendar.google.com/calendar/u/0/r/eventedit?"
 MYURL="https://sam.liho.tw"
 MYURL_HTML="<a href=\"https://sam.liho.tw\">https://sam.liho.tw</a>"
 GCAL_URL=$GCAL_URL_BASE"text="$(rawurlencode "$SUMMARY")"&dates="$DTSTART"/"$DTEND"&details="$(rawurlencode "$MYURL_HTML")"&location="$MYURL
+
+echo $GCAL_URL
